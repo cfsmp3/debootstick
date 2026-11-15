@@ -146,6 +146,15 @@ case "$system_type" in
         exit 1
 esac
 
+# let's verify sector_size variable
+case "$sector_size" in
+    '512'|'1024'|'2048'|'4096')
+        ;;  # ok
+    *)
+        echo "--sector-size option value must be 512, 1024, 2048 or 4096." >&2
+        exit 1
+esac
+
 # let's verify layout_file variable
 if [ "$layout_file" != "default" ]
 then
