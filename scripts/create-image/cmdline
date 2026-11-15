@@ -28,6 +28,19 @@ reject_attached_value()
     fi
 }
 
+# called by parse_args() for the options selecting how the root password
+# is set (ASK or NO_PASSWORD): they cannot be used together.
+set_root_password_request()
+{
+    if [ "$root_password_request" != "NO_REQUEST" ] && \
+       [ "$root_password_request" != "$1" ]
+    then
+        echo "Options '--config-root-password-ask' and '--config-root-password-none' cannot be used together. Exiting." >&2
+        exit 1
+    fi
+    root_password_request="$1"
+}
+
 describe_os_support()
 {
     cat << EOF

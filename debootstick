@@ -85,11 +85,11 @@ parse_args()
             ;;
             --config-root-password-ask)
                 reject_attached_value
-                root_password_request="ASK"
+                set_root_password_request "ASK"
             ;;
             --config-root-password-none)
                 reject_attached_value
-                root_password_request="NO_PASSWORD"
+                set_root_password_request "NO_PASSWORD"
             ;;
             --config-root-password-first-boot)
                 reject_attached_value
