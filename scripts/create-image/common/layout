@@ -179,6 +179,14 @@ check_layout() {
         layout_error "only the last partition can have its size declared as a percentage"
     cd - >/dev/null
 
+    # check that a dos partition table does not hold more than 4 partitions
+    # (sfdisk would silently ignore the next ones)
+    if [ "$(cat "$in_layout_dir/part_table_type")" = "dos" ]
+    then
+        [ $(num_dir_entries "$in_layout_dir/partitions") -le 4 ] || \
+            layout_error "a 'dos' partition table cannot hold more than 4 partitions"
+    fi
+
     # check that no more than 1 lvm volume has size="max"
     if [ -d "$in_layout_dir/lvm_volumes" ]
     then
