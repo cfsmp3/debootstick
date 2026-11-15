@@ -107,6 +107,12 @@ save_volume_info() {
             if ! check_integer "${size%?}"
             then
                 layout_error "invalid size '$size'"
+            elif [ "${size%\%}" != "$size" ]   # percentage
+            then
+                # a percentage cannot exceed 100%
+                percent="$(decimal_number "${size%?}")"
+                [ ${#percent} -le 3 ] && [ $percent -le 100 ] || \
+                    layout_error "invalid size '$size' (a percentage cannot exceed 100%)"
             fi
             ;;
         *)
@@ -201,6 +207,17 @@ check_layout() {
     mountpoints="$(cat "$in_layout_dir"/*/*/mountpoint | grep -vx none)"
     [ $(echo "$mountpoints" | wc -w) -eq $(echo "$mountpoints" | uniq | wc -w) ] || \
         layout_error "repeated mount point"
+
+    # check that percentages of lvm volumes do not add up to more than 100%
+    lvm_percent_total=$(
+        cat "$in_layout_dir"/lvm_volumes/*/size 2>/dev/null | grep "%$" | \
+        while read -r size
+        do
+            decimal_number "${size%?}"
+        done | sum_lines
+    )
+    [ $lvm_percent_total -le 100 ] || \
+        layout_error "percentage sizes of lvm volumes add up to more than 100% (${lvm_percent_total}%)"
 
     # check that vg renaming can be handled
     if [ -f "$in_layout_dir"/final_vg_name ]

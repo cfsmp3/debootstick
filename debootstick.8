@@ -246,6 +246,8 @@ reserve the space for them on the disk image it generates, which can make it lar
 .br
 - \fB<xx>%\fP (e.g. 10%) means debootstick should allocate the given percentage of the
 disk to this partition/volume.
+A percentage cannot exceed 100%, and the percentages of all lvm volumes cannot add up
+to more than 100%.
 .br
 - \fBmax\fP means debootstick should allocate any remaining free space to this partition/volume.
 .PP
