@@ -313,6 +313,7 @@ parse_layout() {
 
     mkdir -p "$in_layout_dir/partitions" "$in_layout_dir/lvm_volumes"
 
+    vg_name_declared=0
     sed -e 's/#.*$//' $in_layout_file | while read inst args
     do
         case "$inst" in
@@ -334,6 +335,9 @@ parse_layout() {
                 echo "$inst" > $in_layout_dir/part_table_type
                 ;;
             "lvm_vg_name")
+                [ $vg_name_declared -eq 0 ] || \
+                    layout_error "several declarations of the lvm vg name"
+                vg_name_declared=1
                 save_lvm_vg_name "$in_layout_dir" $args
                 ;;
             *)
