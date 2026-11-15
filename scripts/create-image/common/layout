@@ -285,17 +285,25 @@ save_lvm_vg_name() {
     then
         layout_error "lvm vg name declaration should be 'lvm_vg_name <vg_name>' or 'lvm_vg_name auto'"
     fi
+
+    # if string delimiters were used, remove them
+    case "$vg_name" in
+        \"*\"|\'*\')
+            vg_name="${vg_name#?}"
+            vg_name="${vg_name%?}"
+            ;;
+    esac
+
     if [ "$vg_name" = "auto" ]
     then
         return  # nothing to do, the auto-generated vg name will be preserved
     fi
 
-    # if string delimiters were used, remove them
-    vg_name="$(echo "$vg_name" | tr -d '"'"'")"
-    if [ ! -z "$(echo "$vg_name" | tr -d '[a-gA-Z0-9_]')" ]
-    then
-        layout_error "lvm vg name accepts only the set of chars [a-zA-Z0-9_]"
-    fi
+    case "$vg_name" in
+        ""|*[!a-zA-Z0-9_]*)
+            layout_error "lvm vg name accepts only the set of chars [a-zA-Z0-9_]"
+            ;;
+    esac
     echo "$vg_name" > $in_layout_dir/final_vg_name
 }
 

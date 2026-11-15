@@ -259,6 +259,7 @@ on first boot.
 .PP
 If LVM is used, it is possible to set a custom volume group name by using keyword \fBlvm_vg_name\fP.
 For instance, one could specify \fBlvm_vg_name "MYVG"\fP (quotes are optional).
+The name may only contain letters, digits and underscores (\fB[a-zA-Z0-9_]\fP).
 If not specified, or when special value \fBauto\fP is given instead of the group name,
 \fBdebootstick\fP generates a random name \fBDBSTCK_<hex\-value>\fP.
 .br
