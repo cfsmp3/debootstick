@@ -6,6 +6,28 @@ usage_and_exit()
     exit $1
 }
 
+# options which need a value
+option_requires_value()
+{
+    case "$1" in
+        --kernel-package|--config-kernel-bootargs|--config-hostname|\
+        --system-type|--disk-layout|--sector-size|--run-on-first-boot)
+            return 0    # yes
+            ;;
+    esac
+    return 1            # no
+}
+
+# called by parse_args() for options which do not accept a value
+reject_attached_value()
+{
+    if [ "$option_value_attached" = 1 ]
+    then
+        echo "Option '$option' does not accept a value. Exiting." >&2
+        exit 1
+    fi
+}
+
 describe_os_support()
 {
     cat << EOF

@@ -28,82 +28,111 @@ image_out=""
 
 parse_args()
 {
+    operands=()
     while [ $# != 0 ]
     do
+        # options requiring a value may be given as '--option <value>'
+        # or as '--option=<value>'.
+        option="$1"
+        option_value=""
+        option_value_attached=0
         case "$1" in
+            --)
+                # end of options: remaining args are operands
+                shift
+                operands+=("$@")
+                break
+            ;;
+            --?*=*)
+                option="${1%%=*}"
+                option_value="${1#*=}"
+                option_value_attached=1
+            ;;
+        esac
+        shift
+
+        if option_requires_value "$option" && [ $option_value_attached = 0 ]
+        then
+            if [ $# = 0 ]
+            then
+                echo "Option '$option' requires a value. Exiting." >&2
+                exit 1
+            fi
+            option_value="$1"
+            shift
+        fi
+
+        case "$option" in
             -h|--help)
+                reject_attached_value
                 usage_and_exit 0
             ;;
             --help-os-support)
+                reject_attached_value
                 describe_os_support
                 exit 0
             ;;
             -v|--version)
+                reject_attached_value
                 echo "debootstick $VERSION"
                 exit 0
             ;;
             --kernel-package)
-                kernel_package="$2"
-                shift 2
+                kernel_package="$option_value"
             ;;
             --config-kernel-bootargs)
-                kernel_bootargs="$2"
-                shift 2
+                kernel_bootargs="$option_value"
             ;;
             --config-root-password-ask)
+                reject_attached_value
                 root_password_request="ASK"
-                shift
             ;;
             --config-root-password-none)
+                reject_attached_value
                 root_password_request="NO_PASSWORD"
-                shift
             ;;
             --config-root-password-first-boot)
+                reject_attached_value
                 root_password_on_first_boot=1
-                shift
             ;;
             --config-hostname)
-                config_hostname="$2"
-                shift 2
+                config_hostname="$option_value"
             ;;
             --config-grub-on-serial-line)
+                reject_attached_value
                 config_grub_on_serial_line=1
-                shift
             ;;
             --system-type)
-                system_type="$2"
-                shift 2
+                system_type="$option_value"
             ;;
             --disk-layout)
-                layout_file="$2"
-                shift 2
+                layout_file="$option_value"
             ;;
             --sector-size)
-                sector_size="$2"
-                shift 2
+                sector_size="$option_value"
             ;;
             --run-on-first-boot)
-                first_boot_script="$2"
-                shift 2
+                first_boot_script="$option_value"
             ;;
-            -*)
-                echo "Unknown option '$1'. Exiting." >&2
+            -?*)
+                echo "Unknown option '$option'. Exiting." >&2
                 exit 1
             ;;
             *)
-                break
+                # options may appear before, between or after operands
+                operands+=("$option")
             ;;
         esac
     done
 
-    # we need 2 more args
-    if [ -z "$2" ]
+    # we need 2 operands
+    if [ ${#operands[@]} -ne 2 ]
     then
         usage_and_exit 1
     fi
 
-    chroot_in="$1"
-    image_out="$2"
+    chroot_in="${operands[0]}"
+    image_out="${operands[1]}"
 }
 
 parse_args "$@"
