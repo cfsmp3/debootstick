@@ -101,8 +101,13 @@ save_volume_info() {
             [ "$subtype" = "bios" -o "$mountpoint" != "none" ] || \
                 layout_error "cannot set size of '$subtype' partition to 'auto' unless you specify the mountpoint"
             ;;
-        *[0-9][%GM])
-            check_integer ${size%?}    # last char removed, must be an integer
+        *[%GM])
+            # last char removed, must be a decimal integer
+            # (leading zeros are allowed)
+            if ! check_integer "${size%?}"
+            then
+                layout_error "invalid size '$size'"
+            fi
             ;;
         *)
             layout_error "invalid size '$size'"
