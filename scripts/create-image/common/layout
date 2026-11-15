@@ -167,7 +167,7 @@ check_layout() {
     in_layout_dir=$1
 
     # check that at least one partition was defined
-    [ -d "$in_layout_dir/partitions" ] || \
+    [ $(num_dir_entries "$in_layout_dir/partitions") -gt 0 ] || \
         layout_error "no partitions defined"
 
     # check that, except for the last one, size of partitions is not "max" or "<xx>%"
@@ -358,7 +358,7 @@ parse_layout() {
 
     # compute fdisk type of partitions
     part_table_type=$(cat "$in_layout_dir"/part_table_type)
-    for vol in $(ls -1d "$in_layout_dir"/partitions/*)
+    for vol in $(ls -1d "$in_layout_dir"/partitions/* 2>/dev/null)
     do
         vol_subtype=$(cat $vol/subtype)
         get_fdisk_type $part_table_type $vol_subtype > $vol/fdisk_type
