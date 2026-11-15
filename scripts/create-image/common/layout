@@ -204,9 +204,11 @@ check_layout() {
     fi
 
     # check that mount points are not repeated
-    mountpoints="$(cat "$in_layout_dir"/*/*/mountpoint | grep -vx none)"
-    [ $(echo "$mountpoints" | wc -w) -eq $(echo "$mountpoints" | uniq | wc -w) ] || \
-        layout_error "repeated mount point"
+    # (whatever the volume types and the order of declaration)
+    repeated_mountpoint="$(cat "$in_layout_dir"/*/*/mountpoint | \
+                           grep -vx none | LC_ALL=C sort | LC_ALL=C uniq -d | head -n 1)"
+    [ -z "$repeated_mountpoint" ] || \
+        layout_error "repeated mount point '$repeated_mountpoint'"
 
     # check that percentages of lvm volumes do not add up to more than 100%
     lvm_percent_total=$(
