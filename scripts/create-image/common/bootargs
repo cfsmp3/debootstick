@@ -7,22 +7,47 @@
 # understood with the following example:
 #
 # $ to_bootarglist quiet rootdelay=3 -quiet rootdelay=2 +break=init
-# + quiet
-# + rootdelay 3
-# - quiet
-# + rootdelay 2
-# + break init
+# + quiet quiet
+# + rootdelay rootdelay=3
+# - quiet quiet
+# + rootdelay rootdelay=2
+# + break break=init
 # $
+#
+# Each line gives the operation (+ or -), the bootarg name, and
+# the bootarg definition. The name is the part of the bootarg
+# before the first '=' sign. The definition is the bootarg without
+# its +/- prefix; its value (after the first '=' sign) is kept
+# exactly, including any additional '=' sign.
+# A bootarg with an empty name (e.g. '+', '-' or '=value') is ignored.
 
 to_bootarglist()
 {
-    echo $@ | tr ' ' '\n' | tr '=' ' ' | \
-        sed -e 's/^\([^+-]\)/+\1/g' | sed -e 's/^\(.\)/\1 /g'
+    printf '%s\n' "$@" | awk '
+        {
+            for (i = 1; i <= NF; i++) {
+                op = "+"
+                def = $i
+                prefix = substr(def, 1, 1)
+                if (prefix == "+" || prefix == "-") {
+                    op = prefix
+                    def = substr(def, 2)
+                }
+                eq = index(def, "=")
+                name = (eq > 0) ? substr(def, 1, eq - 1) : def
+                if (name != "") {
+                    print op " " name " " def
+                }
+            }
+        }'
 }
 
 # The following function allows to generate an appropriate kernel cmdline
 # given a set of bootarg definitions.
-# For a given bootarg name, last definition provided takes precedence.
+# For a given bootarg name, last definition provided takes precedence,
+# and a bootarg prefixed with '-' removes all previous definitions of
+# this bootarg name.
+# Names are compared exactly, and bootargs are listed in name order.
 # Example:
 #
 # $ aggregate_kernel_cmdline quiet rootdelay=3 -quiet rootdelay=2 +break=init
@@ -31,23 +56,14 @@ to_bootarglist()
 
 aggregate_kernel_cmdline()
 {
-    bootarglist="$(to_bootarglist $@)"
-    bootargnames="$(echo "$bootarglist" | awk '{print $2}' | sort -u)"
-    cmdline=""
-    for bootarg in $bootargnames
-    do
-        # last definition of given bootarg takes precedence
-        set -- $(echo "$bootarglist" | grep -w "$bootarg" | tail -n 1)
-        if [ "$1" = "+" ]   # otherwise ignore this bootarg
-        then
-            # ok register this bootarg
-            if [ -z "$3" ]
-            then
-                cmdline="$cmdline $bootarg"     # bootarg with no value
-            else
-                cmdline="$cmdline $bootarg=$3"  # bootarg with value
-            fi
-        fi
-    done
-    echo $cmdline
+    to_bootarglist "$@" | awk '
+        $1 == "+" { defs[$2] = $3 }
+        $1 == "-" { delete defs[$2] }
+        END {
+            for (name in defs) {
+                print name " " defs[name]
+            }
+        }' | sort -k 1,1 | awk '
+        { printf "%s%s", (NR > 1) ? " " : "", $2 }
+        END { print "" }'
 }
