@@ -1,5 +1,25 @@
 # vim: filetype=sh
 
+# check if the given OS description file reports a debian-like OS:
+# its ID is 'debian', or 'debian' is one of the words of its ID_LIKE list.
+# (the file is read in a subshell, so that its variables do not
+# override ours.)
+is_debian_like()
+(
+    os_release_file="$1"
+    ID=""
+    ID_LIKE=""
+    . "$os_release_file"
+    [ "$ID" = "debian" ] && exit 0
+    set -f  # do not expand words of ID_LIKE as file name patterns
+    IFS="$(printf ' \t\n\r\v\f')"  # words are separated by any whitespace
+    for id_like in $ID_LIKE
+    do
+        [ "$id_like" = "debian" ] && exit 0
+    done
+    exit 1
+)
+
 # check that the given directory looks like an OS
 # file structure that we can handle correctly.
 check_fs_hierarchy()
@@ -22,8 +42,7 @@ check_fs_hierarchy()
             return 1
         fi
 
-        . "$fs_tree/etc/os-release"
-        if [ "$ID" != "debian" -a "$ID_LIKE" != "debian" ]
+        if ! is_debian_like "$fs_tree/etc/os-release"
         then
             echo "E: /etc/os-release file in $fs_tree does not report a debian-like OS."
             echo "E: This chroot environment is not supported by debootstick.  Aborting." >&2
