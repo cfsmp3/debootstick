@@ -68,7 +68,7 @@ save_volume_info() {
     vol_dir="$2"
     shift 2
     # check number of args
-    [ "$4" != "" ] || layout_error "invalid syntax '$*'"
+    [ $# -eq 4 ] || layout_error "invalid syntax '$*'"
     shift
     mountpoint="$1"
     subtype="$2"
@@ -315,6 +315,8 @@ parse_layout() {
 
     mkdir -p "$in_layout_dir/partitions" "$in_layout_dir/lvm_volumes"
 
+    # layout words must not be expanded as file name patterns
+    set -f
     vg_name_declared=0
     sed -e 's/#.*$//' $in_layout_file | while read inst args
     do
@@ -332,6 +334,8 @@ parse_layout() {
                 save_volume_info lvm "$vol_dir" "$inst" $args
                 ;;
             "gpt"|"dos")
+                [ -z "$args" ] || \
+                    layout_error "invalid syntax '$inst $args'"
                 [ ! -f "$in_layout_dir/part_table_type" ] || \
                     layout_error "several declarations of the partition table type (gpt|dos)"
                 echo "$inst" > $in_layout_dir/part_table_type
@@ -346,6 +350,7 @@ parse_layout() {
                 layout_error "invalid syntax '$inst'"
         esac
     done
+    set +f
 
     # check that partition table type was defined
     [ -f "$in_layout_dir/part_table_type" ] || \
