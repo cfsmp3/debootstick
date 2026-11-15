@@ -293,9 +293,16 @@ lvm_sum_size_mb()
     done | sum_lines
 }
 
+# remove leading zeros of a decimal number
+# (otherwise shell arithmetic would interpret it as an octal number)
+decimal_number()
+{
+    echo "$1" | sed -e 's/^0*\([0-9]\)/\1/'
+}
+
 size_as_mb()
 {
-    echo $(($(echo $1 | sed -e "s/M//" -e "s/G/*1024/")))
+    echo $(($(decimal_number $1 | sed -e "s/M//" -e "s/G/*1024/")))
 }
 
 sum_lines() {
@@ -318,7 +325,7 @@ analysis_step1() {
         case "$size" in
             *%)
                 # percentage
-                percent_requested=$(echo $size | tr -d '%')
+                percent_requested=$(decimal_number "${size%\%}")
                 size_mb=$((percent_requested*nice_factor*disk_size_mb/NICE_FACTOR_SCALE/100))
                 if [ $current_size_mb -ge $size_mb ]
                 then    # percentage too low regarding current size, convert to 'auto'

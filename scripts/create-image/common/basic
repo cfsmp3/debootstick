@@ -63,9 +63,16 @@ device_size_mb()
     echo $((size_b/1024/1024))
 }
 
+# remove leading zeros of a decimal number
+# (otherwise shell arithmetic would interpret it as an octal number)
+decimal_number()
+{
+    echo "$1" | sed -e 's/^0*\([0-9]\)/\1/'
+}
+
 size_as_mb()
 {
-    echo $(($(echo $1 | sed -e "s/M//" -e "s/G/*1024/")))
+    echo $(($(decimal_number $1 | sed -e "s/M//" -e "s/G/*1024/")))
 }
 
 check_integer() {
