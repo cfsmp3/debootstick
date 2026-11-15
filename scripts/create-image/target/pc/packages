@@ -2,18 +2,19 @@
 
 get_debian_variant()
 {
-    if [ ! -f "/etc/os-release" ]
-    then
-        echo 'unknown'
-        return
-    fi
-    variant="$(grep -o "^ID=.*" /etc/os-release | sed -e 's/ID=//')"
-    if [ "$variant" = "" ]
-    then
-        echo 'unknown'
-        return
-    fi
-    echo "$variant"
+    # read /etc/os-release, or /usr/lib/os-release if the former
+    # does not exist (see os-release(5)).
+    for os_release_file in /etc/os-release /usr/lib/os-release
+    do
+        if [ -f "$os_release_file" ]
+        then
+            # (read it in a subshell, its variables should not override ours)
+            variant="$(ID=""; . "$os_release_file"; echo "$ID")"
+            echo "${variant:-unknown}"
+            return
+        fi
+    done
+    echo 'unknown'
 }
 
 custom_packages()

@@ -1,5 +1,22 @@
 # vim: filetype=sh
 
+# print the path of the OS description file of the given tree.
+# as specified in os-release(5), /etc/os-release is read, or
+# /usr/lib/os-release if the former does not exist.
+get_os_release_file()
+{
+    fs_tree="$1"
+    for os_release_file in etc/os-release usr/lib/os-release
+    do
+        if [ -f "$fs_tree/$os_release_file" ]
+        then
+            echo "$fs_tree/$os_release_file"
+            return 0
+        fi
+    done
+    return 1
+}
+
 # check if the given OS description file reports a debian-like OS:
 # its ID is 'debian', or 'debian' is one of the words of its ID_LIKE list.
 # (the file is read in a subshell, so that its variables do not
@@ -35,16 +52,15 @@ check_fs_hierarchy()
             return 1
         fi
 
-        if [ ! -f "$fs_tree/etc/os-release" ]
-        then
-            echo "E: No /etc/os-release file found in $fs_tree."
+        os_release_file="$(get_os_release_file "$fs_tree")" || {
+            echo "E: No /etc/os-release or /usr/lib/os-release file found in $fs_tree."
             echo "E: Cannot check compatibility. Aborting."
             return 1
-        fi
+        }
 
-        if ! is_debian_like "$fs_tree/etc/os-release"
+        if ! is_debian_like "$os_release_file"
         then
-            echo "E: /etc/os-release file in $fs_tree does not report a debian-like OS."
+            echo "E: ${os_release_file#"$fs_tree"} file in $fs_tree does not report a debian-like OS."
             echo "E: This chroot environment is not supported by debootstick.  Aborting." >&2
             echo "E: Run 'debootstick --help-os-support' for a list of supported chroot environments."
             return 1
